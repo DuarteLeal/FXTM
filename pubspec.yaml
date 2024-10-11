@@ -1,0 +1,22 @@
+name: fx_analysis
+description: "Use this app to monitor your trading activity"
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.4.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^0.13.3
+  provider: ^6.0.1
+  fl_chart: ^0.69.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - lib/json/account_data.json
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
