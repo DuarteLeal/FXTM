@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:fx_analysis/form/login.dart';
+import 'package:fx_analysis/form/register.dart';
+import 'package:fx_analysis/providers/account_provider.dart';
+import 'package:fx_analysis/providers/trade_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'providers/account_provider.dart';
-import 'dart:developer' as dev; //ignore:unused_import
+
+// Define color variables
+const Color kTextColor = Color.fromRGBO(238, 244, 237, 1);
+const Color kAppBarBackgroundColor = Color.fromRGBO(11, 37, 69, 1);
+const Color kPrimaryBackgroundColor = Color.fromRGBO(19, 49, 92, 1);
+const Color kButtonBackgroundColor = Color.fromARGB(141, 169, 196, 255);
+const Color kButtonBorderColor = kTextColor;
+const Color kCardBackgroundColor = Color.fromRGBO(238, 244, 237, 0.646);
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AccountProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AccountProvider()),
+        ChangeNotifierProvider(create: (_) => TradeProvider()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -18,210 +30,265 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'cTrader Tracking',
-      home: AccountScreen(),
+    return MaterialApp(
+      title: 'FX Account Monitor',
+      home: const LandingPage(),
     );
   }
 }
 
-class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+class LandingPage extends StatefulWidget {
+  const LandingPage({super.key});
 
   @override
-  AccountScreenState createState() => AccountScreenState();
+  LandingPageState createState() => LandingPageState();
 }
 
-class AccountScreenState extends State<AccountScreen> {
-  int _selectedIndex = 0; // Índice do painel selecionado
-  bool _isLoading = true; // Variável para controlar o estado de carregamento
-
-  @override
-  void initState() {
-    super.initState();
-    // Adiciona um callback para rodar após o build estar completo
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAccountData(); // Carrega os dados automaticamente ao iniciar a tela
-    });
-  }
-
-  void _loadAccountData() async {
-    final accountProvider =
-        Provider.of<AccountProvider>(context, listen: false);
-    await accountProvider.fetchAccountData();
-    setState(() {
-      _isLoading =
-          false; // Atualiza o estado para indicar que o carregamento terminou
-    });
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
+class LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
-    final accountProvider = Provider.of<AccountProvider>(context);
-
-    if (accountProvider.account != null &&
-        accountProvider.account!.trades.isNotEmpty) {
-      accountProvider.calculateWeeklyBalances();
-    }
+    int selectedIndex = -1;
+    final List<String> buttonLabels = ['Home', 'Pricing', 'About us', 'Contact'];
 
     return Scaffold(
+      backgroundColor: kPrimaryBackgroundColor,
       appBar: AppBar(
-        title: Text("Account nº ${accountProvider.account?.accountId}"),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Row(
-              children: [
-                Container(
-                  width: 250,
-                  padding: const EdgeInsets.all(16.0),
-                  color: Colors.grey[200],
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Account Stats:",
+        backgroundColor: kAppBarBackgroundColor,
+        elevation: 0,
+        titleSpacing: 0,
+        title: Padding(
+          padding: const EdgeInsets.fromLTRB(50, 0, 50, 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(width: 35),
+                  Text(
+                    "FX Trading Monitor",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: kTextColor,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(width: 35),
+                  for (int i = 0; i < buttonLabels.length; i++)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          selectedIndex = i;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          buttonLabels[i],
                           style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      //Account info
-                      ...[
-                        {
-                          "label": "Gain:",
-                          "value":
-                              "${accountProvider.account!.gain.toStringAsFixed(2)}%"
-                        },
-                        {
-                          "label": "Daily:",
-                          "value":
-                              "${accountProvider.account!.daily.toStringAsFixed(2)}%"
-                        },
-                        {
-                          "label": "Monthly:",
-                          "value":
-                              "${accountProvider.account!.monthly.toStringAsFixed(2)}%"
-                        },
-                        {
-                          "label": "Drawdown:",
-                          "value":
-                              "${accountProvider.account!.drawdown.toStringAsFixed(2)}%"
-                        },
-                        {
-                          "label": "Balance:",
-                          "value":
-                              "\$${accountProvider.account!.balance.toStringAsFixed(2)}"
-                        },
-                        {
-                          "label": "Equity:",
-                          "value":
-                              "\$${accountProvider.account!.equity.toStringAsFixed(2)}"
-                        },
-                        {
-                          "label": "Highest:",
-                          "value":
-                              "\$${accountProvider.account!.highest.toStringAsFixed(2)}"
-                        },
-                        {
-                          "label": "Deposit:",
-                          "value":
-                              "\$${accountProvider.account!.deposit.toStringAsFixed(2)}"
-                        },
-                        {
-                          "label": "Withdrawals:",
-                          "value":
-                              "\$${accountProvider.account!.withdrawals.toStringAsFixed(2)}"
-                        },
-                      ].map(
-                        (item) => Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(item["label"]!),
-                            Text(item["value"]!),
-                          ],
+                            color: kTextColor,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _loadAccountData,
-                        child: const Text("Refresh"),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 50),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const LoginForm(),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        "Log in",
+                        style: TextStyle(color: kTextColor, fontSize: 16),
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  TextButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => const RegisterForm(),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: kButtonBackgroundColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                    ),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text(
+                        "Sign up",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 35),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(50, 0, 50, 0),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(35, 0, 35, 0),
+            child: SingleChildScrollView(
+              child: Column(
+                verticalDirection: VerticalDirection.down,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  const SizedBox(height: 150),
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'The best way to\nanalyze and monitor\nyour trading accounts',
+                            style: TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: kTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Easily analyze and monitor all the necessary data to be a successful trader',
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: kTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => const RegisterForm(),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  "Try for free",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              OutlinedButton(
+                                onPressed: () {},
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                                  side: BorderSide(color: kTextColor),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  "See how it works",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: kTextColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )
                     ],
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: LineChart(
-                      LineChartData(
-                        titlesData: FlTitlesData(
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 40,
-                              getTitlesWidget: (value, meta) {
-                                return Text('${value.toInt()}');
-                              },
-                            ),
+                  const SizedBox(height: 150),
+                  Card(
+                    color: kCardBackgroundColor,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(36, 72, 36, 72),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Introducing\naccurate and\ninteractive charts',
+                                style: TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                  color: kTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Join us and enjoy the benefits today!',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: kTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              TextButton(
+                                onPressed: () {},
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Colors.blue,
+                                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  "Try for free",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              reservedSize: 40,
-                              interval: 1,
-                              getTitlesWidget: (value, meta) {
-                                return Text('Semana ${value.toInt()}');
-                              },
-                            ),
-                          ),
-                        ),
-                        borderData: FlBorderData(show: true),
-                        gridData: const FlGridData(show: true),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: accountProvider.weeklyBalances
-                                .asMap()
-                                .entries
-                                .map((entry) {
-                              int weekIndex = entry.key;
-                              double balance =
-                                  entry.value; // saldo da conta em cada semana
-                              return FlSpot(weekIndex.toDouble(), balance);
-                            }).toList(),
-                            isCurved: true,
-                            dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(show: false),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(0, 0, 20, 0),
+                            child: Image.asset("lib/assets/chart.png"),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 150),
+                ],
+              ),
             ),
-      // Bottom Navigation
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Account info',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
-        onTap: _onItemTapped,
+        ),
       ),
     );
   }

@@ -1,78 +1,65 @@
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:fx_analysis/models/trade.dart';
 import '../models/trading_account.dart';
 import 'dart:developer' as dev;
 
 class AccountProvider with ChangeNotifier {
   TradingAccount? account;
-  List<Trade> trades = [];
-  List<double> weeklyBalances = [];
+  
+  List<double> weeklyBalance = [];
+  List<double> weeklyGain = [];
+  double totalProfit = 0;  // Atributo para armazenar o lucro total
+
   int totalWeeks = 0;
 
   DateTime? firstTrade;
   DateTime? lastTrade;
 
-  void calculateWeeklyBalances() {
-    weeklyBalances.clear();
+  void setAccount(TradingAccount newAccount) {
+    account = newAccount;
+    notifyListeners();
+  }
 
-    if (trades.isEmpty) return;
+  Future<void> calculateWeeklyBalancesAndGains() async {
+    weeklyBalance.clear();
+    weeklyGain.clear();
+    totalProfit = 0; // Reset do lucro total para novo cálculo
 
-    firstTrade = trades.first.openDateTime;
-    lastTrade = trades.last.closeDateTime;
+    if (account == null || account!.trades.isEmpty) {
+      notifyListeners();
+      return;
+    }
 
-    double totalBalance = 0;
+    firstTrade = account!.trades.first.openDateTime;
+    lastTrade = account!.trades.last.closeDateTime;
 
     totalWeeks = (lastTrade!.difference(firstTrade!).inDays / 7).ceil();
+    double initialDeposit = account!.deposit;
+    double totalBalance = initialDeposit;
 
-    for (DateTime weekDate = firstTrade!;
-        weekDate.isBefore(lastTrade!.add(const Duration(days: 7)));
-        weekDate = weekDate.add(const Duration(days: 7))) {
-      double weeklyProfit = trades
-          .where((trade) =>
-              trade.openDateTime
-                  .isAfter(weekDate.subtract(const Duration(days: 7))) &&
-              trade.openDateTime.isBefore(weekDate))
-          .fold(0, (sum, trade) => sum + trade.profit);
+    DateTime startOfWeek = firstTrade!;
+    for (int i = 0; i < totalWeeks; i++) {
+      DateTime endOfWeek = startOfWeek.add(const Duration(days: 6));
+      double weeklyProfit = 0;
 
+      for (var trade in account!.trades) {
+        if (trade.openDateTime.isAfter(startOfWeek.subtract(const Duration(seconds: 1))) &&
+            trade.openDateTime.isBefore(endOfWeek.add(const Duration(days: 1)))) {
+          weeklyProfit += trade.profit;
+        }
+      }
+
+      totalProfit += weeklyProfit; // Adicionando o lucro semanal ao lucro total
       totalBalance += weeklyProfit;
+      weeklyBalance.add(totalBalance);
 
-      weeklyBalances.add(totalBalance);
+      double weeklyGainPercentage = (weeklyProfit / initialDeposit) * 100;
+      weeklyGain.add(weeklyGainPercentage);
+
+      startOfWeek = endOfWeek.add(const Duration(days: 1));
     }
 
     dev.log("Total de semanas: $totalWeeks");
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
-  }
-
-  Future<void> fetchAccountData() async {
-    try {
-      final String response =
-          await rootBundle.loadString('lib/json/account_data.json');
-      final data = jsonDecode(response);
-
-      account = TradingAccount(
-        accountId: data['accountId'],
-        accountName: data['accountName'],
-        gain: data['gain'],
-        daily: data['daily'],
-        monthly: data['monthly'],
-        drawdown: data['drawdown'],
-        balance: data['balance'],
-        equity: data['equity'],
-        highest: data['highest'],
-        deposit: data['deposit'],
-        withdrawals: data['withdrawals'],
-        trades: List<Trade>.from(
-            data['trades'].map((trade) => Trade.fromJson(trade))),
-      );
-
-      notifyListeners();
-    } catch (e) {
-      dev.log("Erro ao carregar dados da conta: $e");
-    }
+    dev.log("Lucro Total: $totalProfit"); // Logging do lucro total
+    notifyListeners();
   }
 }

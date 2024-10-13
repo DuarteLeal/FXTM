@@ -6,10 +6,22 @@ import 'package:provider/provider.dart';
 class TradeProvider with ChangeNotifier {
   List<Trade> trades = [];
   final TradeService _tradeService = TradeService();
+  bool isLoading = false;
+  String errorMessage = '';
 
   Future<void> fetchTrades() async {
-    trades = await _tradeService.loadTrades();
-    notifyListeners();
+    try {
+      isLoading = true;
+      notifyListeners();
+
+      trades = await _tradeService.loadTrades();
+      errorMessage = '';
+    } catch (error) {
+      errorMessage = 'Failed to load trades.';
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
   double calculateTotalProfit() {
@@ -17,16 +29,24 @@ class TradeProvider with ChangeNotifier {
   }
 }
 
+void main() {
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TradeProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => TradeProvider(),
-      child: const MaterialApp(
-        home: TradeScreen(),
-      ),
+    return const MaterialApp(
+      home: TradeScreen(),
     );
   }
 }
@@ -43,32 +63,37 @@ class TradeScreen extends StatelessWidget {
         title: const Text("Histórico de Trades"),
       ),
       body: Center(
-        child: tradeProvider.trades.isEmpty
-            ? ElevatedButton(
-                onPressed: () {
-                  tradeProvider.fetchTrades();
-                },
-                child: const Text("Carregar Trades"),
-              )
-            : Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: tradeProvider.trades.length,
-                      itemBuilder: (context, index) {
-                        final trade = tradeProvider.trades[index];
-                        return ListTile(
-                          title: Text(
-                              "${trade.pair}: ${trade.entry} -> ${trade.exit}"),
-                          subtitle: Text(
-                              "Lotes: ${trade.lots}, Lucro: ${trade.profit}"),
-                        );
-                      },
-                    ),
-                  ),
-                  Text("Lucro Total: ${tradeProvider.calculateTotalProfit()}"),
-                ],
-              ),
+        child: tradeProvider.isLoading
+            ? const CircularProgressIndicator()
+            : tradeProvider.errorMessage.isNotEmpty
+                ? Text(tradeProvider.errorMessage)
+                : tradeProvider.trades.isEmpty
+                    ? ElevatedButton(
+                        onPressed: () {
+                          tradeProvider.fetchTrades();
+                        },
+                        child: const Text("Carregar Trades"),
+                      )
+                    : Column(
+                        children: [
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: tradeProvider.trades.length,
+                              itemBuilder: (context, index) {
+                                final trade = tradeProvider.trades[index];
+                                return ListTile(
+                                  title: Text(
+                                      "${trade.pair}: ${trade.entry} -> ${trade.exit}"),
+                                  subtitle: Text(
+                                      "Lotes: ${trade.lots}, Lucro: ${trade.profit}"),
+                                );
+                              },
+                            ),
+                          ),
+                          Text(
+                              "Lucro Total: ${tradeProvider.calculateTotalProfit()}"),
+                        ],
+                      ),
       ),
     );
   }
