@@ -16,6 +16,8 @@ dependencies:
   uuid: ^3.0.4
   shared_preferences: ^2.0.11
   url_launcher: ^6.1.6
+  fixnum: ^1.1.1
+  protobuf: ^3.1.0
 
 flutter:
   uses-material-design: true

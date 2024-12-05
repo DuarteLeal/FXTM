@@ -135,150 +135,148 @@ class LandingPageState extends State<LandingPage> {
       body: Padding(
         padding: const EdgeInsets.fromLTRB(50, 0, 50, 0),
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(35, 0, 35, 0),
-            child: SingleChildScrollView(
-              child: Column(
-                verticalDirection: VerticalDirection.down,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  const SizedBox(height: 150),
-                  Row(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'The best way to\nanalyze and monitor\nyour trading accounts',
-                            style: TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
+          child: 
+          SingleChildScrollView(
+            child: Column(
+              verticalDirection: VerticalDirection.down,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const SizedBox(height: 150),
+                Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'The best way to\nanalyze and monitor\nyour trading accounts',
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
                           ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Easily analyze and monitor all the necessary data to be a successful trader',
-                            style: TextStyle(
-                              fontSize: 20,
-                              color: Colors.black54,
-                            ),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Easily analyze and monitor all the necessary data to be a successful trader',
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: Colors.black54,
                           ),
-                          const SizedBox(height: 30),
-                          Row(
-                            children: [
-                              TextButton(
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => const RegisterForm(),
-                                  );
-                                },
-                                style: TextButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Try for free",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                        ),
+                        const SizedBox(height: 30),
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => const RegisterForm(),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              const SizedBox(width: 20),
-                              OutlinedButton(
-                                onPressed: () {},
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                                  side: const BorderSide(color: Colors.black),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                child: const Text(
-                                  "See how it works",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 150),
-                  Card(
-                    color: Colors.grey[100],
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(36, 72, 36, 72),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Introducing\naccurate and\ninteractive charts',
+                              child: const Text(
+                                "Try for free",
                                 style: TextStyle(
-                                  fontSize: 40,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            OutlinedButton(
+                              onPressed: () {},
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                                side: const BorderSide(color: Colors.black),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                "See how it works",
+                                style: TextStyle(
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black,
                                 ),
                               ),
-                              const SizedBox(height: 10),
-                              const Text(
-                                'Join us and enjoy the benefits today!',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: Colors.black87,
-                                ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 150),
+                Card(
+                  color: Colors.grey[100],
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(36, 72, 36, 72),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Introducing\naccurate and\ninteractive charts',
+                              style: TextStyle(
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
-                              const SizedBox(height: 20),
-                              Row(
-                                children: [
-                                  TextButton(
-                                    onPressed: () {},
-                                    style: TextButton.styleFrom(
-                                      backgroundColor: Colors.blue,
-                                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      "Try for free",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Join us and enjoy the benefits today!',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () {},
+                                  style: TextButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 30),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  const SizedBox(width: 20),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(0, 0, 20, 0),
-                            child: Image.asset("lib/assets/chart.png"),
-                          ),
-                        ],
-                      ),
+                                  child: const Text(
+                                    "Try for free",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 20),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 0, 20, 0),
+                          child: Image.asset("lib/assets/chart.png"),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 150),
-                ],  
-              ),
+                ),
+                const SizedBox(height: 150),
+              ],  
             ),
           ),
         ),
