@@ -113,11 +113,9 @@ class CTraderConnection {
           dev.log('Deals retrieved: ${response.deal.length}');
           allDeals.addAll(response.deal);
 
-          // Check if there are more records
           hasMore = response.hasMore;
 
           if (hasMore) {
-            // Update currentFromTimestamp to continue from the last deal's timestamp
             currentFromTimestamp = Int64(response.deal.last.timestamp.toInt() + 1);
           }
         } else {
