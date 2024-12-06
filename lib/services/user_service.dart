@@ -140,4 +140,44 @@ class UserService {
     await usersCollection.doc(userId).update({'password': hashedPassword});
     dev.log("Password updated successfully.");
   }
+
+  bool isEmailValid(String email) {
+    // Regular expression to validate email format
+    final emailRegex =
+        RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$");
+    return emailRegex.hasMatch(email);
+  }
+
+  /// Checks if the email is available in the Firestore database.
+  Future<bool> isEmailAvailable(String email) async {
+    // Reference to the 'Users' collection in Firestore
+    CollectionReference usersCollection =
+        FirebaseFirestore.instance.collection('Users');
+
+    // Query the database to check if the email exists
+    QuerySnapshot querySnapshot =
+        await usersCollection.where('email', isEqualTo: email).get();
+
+    // If no documents are found, the email is available
+    return querySnapshot.docs.isEmpty;
+  }
+
+  /// Combines validation and availability check.
+  Future<bool> checkEmail(String email) async {
+    // First, validate the email format
+    if (!isEmailValid(email)) {
+      dev.log("Invalid email format.");
+      return false;
+    }
+
+    // Then, check if the email is available
+    bool available = await isEmailAvailable(email);
+    if (!available) {
+      dev.log("Email is already in use.");
+      return false;
+    }
+
+    dev.log("Email is valid and available.");
+    return true;
+  }
 }
