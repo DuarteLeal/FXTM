@@ -1,9 +1,8 @@
-import 'dart:convert';
-import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fx_analysis/user_profile.dart';
-import 'package:fx_analysis/models/user.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fx_analysis/mainpage.dart';
+import 'dart:html' as html; // ignore: avoid_web_libraries_in_flutter
+import 'dart:developer' as dev;
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
@@ -13,9 +12,9 @@ class LoginForm extends StatefulWidget {
 }
 
 class LoginFormState extends State<LoginForm> {
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  String _usernameError = '';
+  String _emailError = '';
   String _passwordError = '';
   bool _rememberMe = false;
 
@@ -25,14 +24,24 @@ class LoginFormState extends State<LoginForm> {
     _loadSavedCredentials();
   }
 
-  Future<void> _loadSavedCredentials() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? savedUsername = prefs.getString('username');
-    String? savedPassword = prefs.getString('password');
+  void _loadSavedCredentials() {
+    final cookies = html.document.cookie?.split('; ') ?? [];
+    final emailCookie = cookies.firstWhere(
+      (cookie) => cookie.startsWith('email='),
+      orElse: () => '',
+    );
+    final passwordCookie = cookies.firstWhere(
+      (cookie) => cookie.startsWith('password='),
+      orElse: () => '',
+    );
 
-    if (savedUsername != null && savedPassword != null) {
-      _usernameController.text = savedUsername;
+    if (emailCookie.isNotEmpty && passwordCookie.isNotEmpty) {
+      final savedEmail = emailCookie.split('=')[1];
+      final savedPassword = passwordCookie.split('=')[1];
+
+      _emailController.text = savedEmail;
       _passwordController.text = savedPassword;
+
       setState(() {
         _rememberMe = true;
       });
@@ -47,11 +56,12 @@ class LoginFormState extends State<LoginForm> {
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
-            controller: _usernameController,
+            controller: _emailController,
             decoration: InputDecoration(
-              labelText: 'Username',
-              errorText: _usernameError.isEmpty ? null : _usernameError,
+              labelText: 'Email',
+              errorText: _emailError.isEmpty ? null : _emailError,
             ),
+            keyboardType: TextInputType.emailAddress,
           ),
           TextField(
             controller: _passwordController,
@@ -79,9 +89,7 @@ class LoginFormState extends State<LoginForm> {
       ),
       actions: [
         ElevatedButton(
-          onPressed: () {
-            _loginUser();
-          },
+          onPressed: _loginUser,
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.white,
             backgroundColor: Colors.blue,
@@ -97,69 +105,66 @@ class LoginFormState extends State<LoginForm> {
   }
 
   void _loginUser() async {
-  final file = File('C:/Users/donzd/Documents/flutter projects/fx_analysis/lib/json/users.json');
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
 
-  if (await file.exists()) {
-    final String contents = await file.readAsString();
-    final List<dynamic> users = jsonDecode(contents);
+      final User? user = userCredential.user;
 
-    User? authenticatedUser;
+      if (user != null) {
+        dev.log("Login: Firebase Authenticated user: ${user.uid}");
 
-    for (var userData in users) {
-      if (userData['username'] == _usernameController.text &&
-          userData['password'] == _passwordController.text.codeUnits.toString()) {
-        authenticatedUser = User.fromJson(userData);
-        break;
+        if (_rememberMe) {
+          _saveCredentials();
+        } else {
+          _clearCredentials();
+        }
+
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => MainPage(userID: user.uid),
+            ),
+          );
+        }
       }
-    }
-
-    if (authenticatedUser != null) {
-      if (_rememberMe) {
-        _saveCredentials();
-      } else {
-        _clearCredentials();
-      }
-
-      if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => UserProfile(user: authenticatedUser!),
-          ),
-        );
-      }
-    } else {
-      if (mounted) {
-        setState(() {
-          _usernameError = 'Invalid username or password';
-          _passwordError = 'Invalid username or password';
-        });
-      }
-    }
-  } else {
-    if (mounted) {
+    } on FirebaseAuthException catch (e) {
+      dev.log("Erro de login no Firebase: $e");
       setState(() {
-        _usernameError = 'No user data found. Please register first.';
+        if (e.code == 'user-not-found') {
+          _emailError = 'No user found for this email.';
+        } else if (e.code == 'wrong-password') {
+          _passwordError = 'Incorrect password.';
+        } else {
+          _emailError = 'An error occurred. Please try again.';
+        }
+      });
+    } catch (e) {
+      dev.log("Erro inesperado: $e");
+      setState(() {
+        _emailError = 'An unexpected error occurred.';
       });
     }
   }
-}
 
+  void _saveCredentials() {
+    final cookieExpiryDate = DateTime.now().add(const Duration(days: 30));
+    final cookieExpiry = 'expires=${cookieExpiryDate.toUtc().toIso8601String()}';
 
-  Future<void> _saveCredentials() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString('username', _usernameController.text);
-    await prefs.setString('password', _passwordController.text);
+    html.document.cookie = 'email=${_emailController.text}; $cookieExpiry; path=/';
+    html.document.cookie = 'password=${_passwordController.text}; $cookieExpiry; path=/';
   }
 
-  Future<void> _clearCredentials() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('username');
-    await prefs.remove('password');
+  void _clearCredentials() {
+    html.document.cookie = 'email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+    html.document.cookie = 'password=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }

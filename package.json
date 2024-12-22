@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "cors": "^2.8.5",
+    "firebase-admin": "^13.0.1",
+    "firebase-functions": "^6.1.2",
+    "punycode": "^2.3.1"
+  }
+}

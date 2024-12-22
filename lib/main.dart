@@ -1,11 +1,41 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fx_analysis/form/login.dart';
 import 'package:fx_analysis/form/register.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'dart:developer' as dev;
 
-void main() {
-  runApp(
-      const MyApp(),
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: "AIzaSyDgh_5hkrsqEJn3C6IHM17IknoGkMmmxTc",
+      authDomain: "fxtm-68226.firebaseapp.com",
+      projectId: "fxtm-68226",
+      storageBucket: "fxtm-68226.firebasestorage.app",
+      messagingSenderId: "628437121585",
+      appId: "1:628437121585:web:ca5820cfdfe61875493310",
+      measurementId: "G-75WKH6L7DW",
+    ),
   );
+
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+  runApp(MyApp());
+  testFirebaseAuthConnection();
+}
+
+void testFirebaseAuthConnection() async {
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user != null) {
+    dev.log("Firebase Auth connection successful. User is authenticated:");
+    dev.log("UID: ${user.uid}");
+    dev.log("Email: ${user.email}");
+  } else {
+    dev.log("Main: No user is currently authenticated.");
+  }
 }
 
 class MyApp extends StatelessWidget {

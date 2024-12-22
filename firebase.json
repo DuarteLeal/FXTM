@@ -1,0 +1,63 @@
+{
+  "firestore": [
+    {
+      "database": "default",
+      "rules": "firestore.default.rules",
+      "indexes": "firestore.default.indexes.json"
+    },
+    {
+      "database": "ecommerce",
+      "rules": "firestore.ecommerce.rules",
+      "indexes": "firestore.ecommerce.indexes.json"
+    }
+  ],
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ],
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  },
+  "ignore": [
+    ".git",
+    ".runtimeconfig.json",
+    "firebase-debug.log",
+    "firebase-debug.*.log",
+    "node_modules"
+  ],
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

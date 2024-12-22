@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fx_analysis/form/login.dart'; // ignore: unused_import
-import 'package:uuid/uuid.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -12,59 +10,45 @@ class RegisterForm extends StatefulWidget {
 }
 
 class RegisterFormState extends State<RegisterForm> {
-  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  final Uuid uuid = const Uuid();
-  String _usernameError = '';
-  String _emailError = '';
-  String _passwordError = '';
-  String _confirmPasswordError = '';
+
+  String _errorMessage = '';
   bool _termsAccepted = false; // Track checkbox state
-  // ignore: unused_field
-  String _termsError = ''; // Error message for terms
+  bool _isLoading = false; // Loading indicator
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: Colors.grey[200],
       content: SizedBox(
-        height: 400,
+        height: 500,
         width: 350,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Center(
-              child: Text("Sign Up", style: TextStyle(color: Colors.blue, fontSize: 25))
+              child: Text("Sign Up", style: TextStyle(color: Colors.blue, fontSize: 25)),
             ),
             TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(
-                labelText: 'Username',
-                errorText: _usernameError.isEmpty ? null : _usernameError,
-              ),
+              controller: _nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
             ),
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                errorText: _emailError.isEmpty ? null : _emailError,
-              ),
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                errorText: _passwordError.isEmpty ? null : _passwordError,
-              ),
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
             ),
             TextField(
               controller: _confirmPasswordController,
-              decoration: InputDecoration(
-                labelText: 'Confirm Password',
-                errorText: _confirmPasswordError.isEmpty ? null : _confirmPasswordError,
-              ),
+              decoration: const InputDecoration(labelText: 'Confirm Password'),
+              obscureText: true,
             ),
             const Spacer(),
             Row(
@@ -77,9 +61,16 @@ class RegisterFormState extends State<RegisterForm> {
                     });
                   },
                 ),
-                const Expanded(child: Text('I agree to the Terms of Service & Privacy Policy')),
+                const Expanded(
+                  child: Text('I agree to the Terms of Service & Privacy Policy'),
+                ),
               ],
             ),
+            if (_errorMessage.isNotEmpty)
+              Text(
+                _errorMessage,
+                style: const TextStyle(color: Colors.red),
+              ),
           ],
         ),
       ),
@@ -91,24 +82,18 @@ class RegisterFormState extends State<RegisterForm> {
               children: [
                 const Text("Already a member? "),
                 GestureDetector(
-                  onTap: () {},
-                  child: const Text("Log in", style: TextStyle(decoration: TextDecoration.underline)),
+                  onTap: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text(
+                    "Log in",
+                    style: TextStyle(decoration: TextDecoration.underline),
+                  ),
                 ),
               ],
             ),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  if (!_termsAccepted) {
-                    _termsError = 'You must accept the terms to continue.';
-                  } else {
-                    _termsError = '';
-                    if (_validateForm()) {
-                      _registerUser();
-                    }
-                  }
-                });
-              },
+              onPressed: _isLoading ? null : _registerUser,
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
                 backgroundColor: Colors.blue,
@@ -117,7 +102,9 @@ class RegisterFormState extends State<RegisterForm> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
               ),
-              child: const Text('Sign Up'),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Sign Up'),
             ),
           ],
         ),
@@ -125,73 +112,75 @@ class RegisterFormState extends State<RegisterForm> {
     );
   }
 
-  bool _validateForm() {
-    bool isValid = true;
+  /// Handles user registration.
+  Future<void> _registerUser() async {
     setState(() {
-      if (_usernameController.text.isEmpty) {
-        _usernameError = 'Username cannot be empty';
-        isValid = false;
-      } else {
-        _usernameError = '';
-      }
-
-      if (!_emailController.text.contains('@')) {
-        _emailError = 'Enter a valid email';
-        isValid = false;
-      } else {
-        _emailError = '';
-      }
-
-      if (!_validatePassword(_passwordController.text)) {
-        _passwordError = 'Password must be at least 8 characters, include an uppercase letter, a lowercase letter, a number, and a special character.';
-        isValid = false;
-      } else {
-        _passwordError = '';
-      }
-
-      if (_passwordController.text != _confirmPasswordController.text) {
-        _confirmPasswordError = 'Passwords do not match';
-        isValid = false;
-      } else {
-        _confirmPasswordError = '';
-      }
+      _errorMessage = '';
+      _isLoading = true;
     });
-    return isValid;
-  }
 
-  bool _validatePassword(String password) {
-    bool hasUppercase = password.contains(RegExp(r'[A-Z]'));
-    bool hasDigits = password.contains(RegExp(r'[0-9]'));
-    bool hasLowercase = password.contains(RegExp(r'[a-z]'));
-    bool hasSpecialCharacters = password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-    bool hasMinLength = password.length >= 8;
-    return hasUppercase && hasDigits && hasLowercase && hasSpecialCharacters && hasMinLength;
-  }
-
-  void _registerUser() async {
-    final file = File('C:/Users/donzd/Documents/flutter projects/fx_analysis/lib/json/user_data.json');
-    List<dynamic> users = [];
-
-    if (await file.exists()) {
-      final String contents = await file.readAsString();
-      users = jsonDecode(contents);
+    // Validate inputs
+    if (!_termsAccepted) {
+      setState(() {
+        _errorMessage = 'You must accept the terms to continue.';
+        _isLoading = false;
+      });
+      return;
     }
 
-    users.add({
-      'id': uuid.v4(),
-      'username': _usernameController.text,
-      'email': _emailController.text,
-      'password': _passwordController.text.codeUnits.toString(),
-    });
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _errorMessage = 'Passwords do not match.';
+        _isLoading = false;
+      });
+      return;
+    }
 
-    await file.writeAsString(jsonEncode(users));
-    
-    Navigator.of(context).pop(); // ignore: use_build_context_synchronously
+    try {
+      // Create user with Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      // Store additional user data in Firestore
+      User? user = userCredential.user;
+      if (user != null) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'name': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'createdAt': DateTime.now(),
+        });
+
+        // Navigate or close the dialog on success
+        if (mounted) {
+          Navigator.of(context).pop(); // Close the dialog after successful registration
+        }
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        if (e.code == 'weak-password') {
+          _errorMessage = 'The password is too weak.';
+        } else if (e.code == 'email-already-in-use') {
+          _errorMessage = 'The email is already registered.';
+        } else {
+          _errorMessage = 'An error occurred. Please try again.';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Unexpected error: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
