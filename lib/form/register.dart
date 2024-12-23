@@ -112,14 +112,12 @@ class RegisterFormState extends State<RegisterForm> {
     );
   }
 
-  /// Handles user registration.
   Future<void> _registerUser() async {
     setState(() {
       _errorMessage = '';
       _isLoading = true;
     });
 
-    // Validate inputs
     if (!_termsAccepted) {
       setState(() {
         _errorMessage = 'You must accept the terms to continue.';
@@ -137,13 +135,11 @@ class RegisterFormState extends State<RegisterForm> {
     }
 
     try {
-      // Create user with Firebase Authentication
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      // Store additional user data in Firestore
       User? user = userCredential.user;
       if (user != null) {
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
@@ -152,9 +148,8 @@ class RegisterFormState extends State<RegisterForm> {
           'createdAt': DateTime.now(),
         });
 
-        // Navigate or close the dialog on success
         if (mounted) {
-          Navigator.of(context).pop(); // Close the dialog after successful registration
+          Navigator.of(context).pop();
         }
       }
     } on FirebaseAuthException catch (e) {

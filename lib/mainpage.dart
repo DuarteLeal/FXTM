@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fx_analysis/pages/compound_interest.dart';
 import 'package:fx_analysis/pages/dashboard.dart';
 import 'package:fx_analysis/pages/my_accounts.dart';
 import 'package:fx_analysis/services/account_service.dart';
@@ -65,17 +66,6 @@ class MainPageState extends State<MainPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              userID,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
           const SizedBox(height: 20),
           const Padding(
             padding: EdgeInsets.all(16.0),
@@ -113,9 +103,14 @@ class MainPageState extends State<MainPage> {
             onTap: () => _onItemSelected('Market data'),
           ),
           SidebarButton(
-            label: 'Notifications',
-            isSelected: _selectedLabel == 'Notifications',
-            onTap: () => _onItemSelected('Notifications'),
+            label: 'News',
+            isSelected: _selectedLabel == 'News',
+            onTap: () => _onItemSelected('News'),
+          ),
+          SidebarButton(
+            label: 'Calculators',
+            isSelected: _selectedLabel == 'Calculators',
+            onTap: () => _onItemSelected('Calculators'),
           ),
           const Spacer(),
           SidebarButton(
@@ -150,8 +145,10 @@ class MainPageState extends State<MainPage> {
         return const Text('Reports data will be shown here.');
       case 'Market data':
         return const Text('Market data will be shown here.');
-      case 'Notifications':
-        return const Text('Notifications will be shown here.');
+      case 'News':
+        return const Text('News will be shown here.');
+        case 'Calculators':
+        return CompoundInterestCalculator();
       case 'Settings':
         return const Text('Settings adjustments will be shown here.');
       case 'Help Center':
