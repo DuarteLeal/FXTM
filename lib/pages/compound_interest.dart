@@ -1,302 +1,393 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'dart:math';
 
-void main() => runApp(MaterialApp(home: Scaffold(body: CompoundInterestCalculator())));
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Compound Interest Calculator',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: const Scaffold(
+        body: CompoundInterestCalculator(),
+      ),
+    );
+  }
+}
 
 class CompoundInterestCalculator extends StatefulWidget {
   const CompoundInterestCalculator({super.key});
 
   @override
-  _CompoundInterestCalculatorState createState() => _CompoundInterestCalculatorState();
+  _CompoundInterestCalculatorState createState() =>
+      _CompoundInterestCalculatorState();
 }
 
-class _CompoundInterestCalculatorState extends State<CompoundInterestCalculator> {
-  double initialDeposit = 5000;
-  double contributionAmount = 250;
-  int investmentTimespan = 5;
-  double estimatedReturn = 5;
-  String compoundPeriod = "12"; // Monthly
-  String contributionFrequency = "monthly"; // Default frequency
-  String returnFrequency = "annually"; // Default return frequency
+class _CompoundInterestCalculatorState
+    extends State<CompoundInterestCalculator> {
+  final TextEditingController initialInvestmentController =
+      TextEditingController(text: '5000');
+  final TextEditingController interestRateController =
+      TextEditingController(text: '5');
+  final TextEditingController additionalDepositController =
+      TextEditingController(text: '300');
+  final TextEditingController yearsController =
+      TextEditingController(text: '1');
+  final TextEditingController monthsController =
+      TextEditingController(text: '0');
 
-  List<BarChartGroupData> chartData = [];
+  String compoundFrequency = 'Monthly';
+  String depositFrequency = 'Monthly';
+  final List<String> frequencies = ['Daily', 'Weekly', 'Monthly', 'Annually'];
 
-  late double totalContributions;
-  late double totalInterest;
+  double totalDeposited = 0.0;
+  double totalInterestEarned = 0.0;
+  double totalBalance = 0.0;
+  List<Map<String, dynamic>> tableData = [];
 
-  @override
-  void initState() {
-    super.initState();
-    updateChartData();
-  }
+  void calculate() {
+    final double initialInvestment =
+        double.tryParse(initialInvestmentController.text) ?? 0.0;
+    final double annualInterestRate =
+        double.tryParse(interestRateController.text) ?? 0.0;
+    final double additionalDeposit =
+        double.tryParse(additionalDepositController.text) ?? 0.0;
+    final int years = int.tryParse(yearsController.text) ?? 0;
+    final int months = int.tryParse(monthsController.text) ?? 0;
 
-  void updateChartData() {
-    double P = initialDeposit; // Principal
-    double r = estimatedReturn / 100; // Return rate as a fraction
-    double c = contributionAmount; // Contribution Amount
-    int n = getFrequencyValue(returnFrequency); // Return frequency
-    int t = investmentTimespan; // Investment Timespan
+    // Determine the total number of periods in months
+    final int totalMonths = (years * 12) + months;
+    if (totalMonths == 0) return;
 
-    int n2 = getFrequencyValue(contributionFrequency); // Contribution frequency
+    double currentBalance = initialInvestment;
+    totalDeposited = initialInvestment;
+    totalInterestEarned = 0.0;
 
-    double contributionsAccumulated = 0; // Tracks total contributions excluding initial deposit
-    double interestAccumulated = 0;
+    tableData = [];
 
-    List<BarChartGroupData> updatedData = [];
+    for (int month = 1; month <= totalMonths; month++) {
+      double monthlyInterestEarned = 0.0;
 
-    for (int i = 1; i <= t * n; i++) {
-      // Apply periodic return directly based on selected frequency
-      double interest = P * r;
-      P += interest;
-      interestAccumulated += interest;
-
-      // Apply contributions
-      if (i % (n ~/ n2) == 0) {
-        P += c;
-        contributionsAccumulated += c;
+      // Apply interest based on compound frequency
+      if (compoundFrequency == 'Daily') {
+        for (int day = 1; day <= 30; day++) {
+          double dailyInterest = currentBalance * (annualInterestRate / 100);
+          monthlyInterestEarned += dailyInterest;
+          currentBalance += dailyInterest;
+        }
+      } else if (compoundFrequency == 'Weekly') {
+        for (int week = 1; week <= 4; week++) {
+          double weeklyInterest = currentBalance * (annualInterestRate / 100);
+          monthlyInterestEarned += weeklyInterest;
+          currentBalance += weeklyInterest;
+        }
+      } else if (compoundFrequency == 'Monthly') {
+        double monthlyInterest = currentBalance * (annualInterestRate / 100);
+        monthlyInterestEarned += monthlyInterest;
+        currentBalance += monthlyInterest;
+      } else if (compoundFrequency == 'Annually' && month % 12 == 0) {
+        double annualInterest = currentBalance * (annualInterestRate / 100);
+        monthlyInterestEarned += annualInterest;
+        currentBalance += annualInterest;
       }
 
-      if (i % n == 0) {
-        updatedData.add(BarChartGroupData(x: i ~/ n, barRods: [
-          BarChartRodData(toY: P, color: Colors.blue),
-        ]));
+      totalInterestEarned += monthlyInterestEarned;
+
+      // Add deposits based on deposit frequency
+      if (depositFrequency == 'Daily') {
+        currentBalance += additionalDeposit * 30; // 30 days in a month
+        totalDeposited += additionalDeposit * 30;
+      } else if (depositFrequency == 'Weekly') {
+        currentBalance += additionalDeposit * 4; // 4 weeks in a month
+        totalDeposited += additionalDeposit * 4;
+      } else if (depositFrequency == 'Monthly') {
+        currentBalance += additionalDeposit;
+        totalDeposited += additionalDeposit;
+      } else if (depositFrequency == 'Annually' && month % 12 == 0) {
+        currentBalance += additionalDeposit;
+        totalDeposited += additionalDeposit;
       }
+
+      // Add data to the table
+      tableData.add({
+        "Period": month,
+        "Deposits": (depositFrequency == 'Daily')
+            ? additionalDeposit * 30
+            : (depositFrequency == 'Weekly')
+                ? additionalDeposit * 4
+                : (depositFrequency == 'Monthly')
+                    ? additionalDeposit
+                    : (depositFrequency == 'Annually' && month % 12 == 0)
+                        ? additionalDeposit
+                        : 0.0,
+        "Interest": monthlyInterestEarned,
+        "Total Deposits": totalDeposited,
+        "Accrued Interest": totalInterestEarned,
+        "Balance": currentBalance,
+      });
     }
 
-    setState(() {
-      chartData = updatedData;
-      totalContributions = contributionsAccumulated + initialDeposit; // Include initial deposit
-      totalInterest = interestAccumulated;
-    });
-  }
-  int getFrequencyValue(String frequency) {
-    switch (frequency) {
-      case "daily":
-        return 365;
-      case "weekly":
-        return 52;
-      case "monthly":
-        return 12;
-      case "semiannually":
-        return 2;
-      case "annually":
-        return 1;
-      default:
-        return 12;
-    }
+    totalBalance = currentBalance;
+
+    // Update the state to reflect the changes
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 1,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+    final size = MediaQuery.of(context).size;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(48, 16, 48, 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Formulário à esquerda
+          SizedBox(
+            width: size.width * 0.4, // 40% da largura da tela
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Em desenvolvimento", style: TextStyle(fontSize: 20),),
-                SizedBox(height: 20),
+                const Text(
+                  'Initial investment:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: initialInvestmentController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 Row(
                   children: [
-                    TextButton(onPressed: () { setState(() { initialDeposit = (initialDeposit - 100).clamp(0, double.infinity); updateChartData(); }); }, child: Text("-")),
-                    SizedBox(
-                      width: 200,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          labelText: "Initial Deposit (\$)",
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                        ),
-                        keyboardType: TextInputType.number,
-                        controller: TextEditingController(text: "\$${initialDeposit.toInt()}"),
-                        readOnly: true,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Interest rate (%):',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: interestRateController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    TextButton(onPressed: () { setState(() { initialDeposit += 100; updateChartData(); }); }, child: Text("+")),
-                  ],
-                ),
-                SizedBox(height: 16),
-                Row(
-                  children: [
-                    TextButton(onPressed: () { setState(() { contributionAmount = (contributionAmount - 100).clamp(0, double.infinity); updateChartData(); }); }, child: Text("-")),
-                    SizedBox(
-                      width: 200,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          labelText: "Contributions (\$)",
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                        ),
-                        keyboardType: TextInputType.number,
-                        controller: TextEditingController(text: "\$${contributionAmount.toInt()}"),
-                        onChanged: (value) {
-                          setState(() {
-                            contributionAmount = double.tryParse(value.replaceAll("\$", "")) ?? contributionAmount;
-                            updateChartData();
-                          });
-                        },
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Compound frequency:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButton<String>(
+                            value: compoundFrequency,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                compoundFrequency = newValue!;
+                              });
+                            },
+                            items: frequencies
+                                .map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            isExpanded: true,
+                          ),
+                        ],
                       ),
                     ),
-                    TextButton(onPressed: () { setState(() { contributionAmount = (contributionAmount + 100).clamp(0, double.infinity); updateChartData(); }); }, child: Text("+")),
-                    DropdownButton<String>(
-                      value: contributionFrequency,
-                      items: const [
-                        DropdownMenuItem(value: "daily", child: Text("Daily")),
-                        DropdownMenuItem(value: "weekly", child: Text("Weekly")),
-                        DropdownMenuItem(value: "monthly", child: Text("Monthly")),
-                        DropdownMenuItem(value: "semiannually", child: Text("Semiannually")),
-                        DropdownMenuItem(value: "annually", child: Text("Annually")),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          contributionFrequency = value!;
-                          updateChartData();
-                        });
-                      },
-                    ),
                   ],
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 Row(
                   children: [
-                    TextButton(onPressed: () { setState(() { estimatedReturn = (estimatedReturn - 0.5).clamp(0, double.infinity); updateChartData(); }); }, child: Text("-")),
-                    SizedBox(
-                      width: 200,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          labelText: "Estimated Rate of Return (%)",
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-                        ),
-                        keyboardType: TextInputType.number,
-                        controller: TextEditingController(text: "${estimatedReturn.toStringAsFixed(1)}%"),
-                        readOnly: true,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Additional deposit:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: additionalDepositController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    TextButton(onPressed: () { setState(() { estimatedReturn += 0.5; updateChartData(); }); }, child: Text("+")),
-                    DropdownButton<String>(
-                      value: returnFrequency,
-                      items: const [
-                        DropdownMenuItem(value: "daily", child: Text("Daily")),
-                        DropdownMenuItem(value: "weekly", child: Text("Weekly")),
-                        DropdownMenuItem(value: "monthly", child: Text("Monthly")),
-                        DropdownMenuItem(value: "semiannually", child: Text("Semiannually")),
-                        DropdownMenuItem(value: "annually", child: Text("Annually")),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          returnFrequency = value!;
-                          updateChartData();
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 300,
-                      child: Slider(
-                        value: investmentTimespan.toDouble(),
-                        min: 1,
-                        max: 30,
-                        divisions: 29,
-                        label: "$investmentTimespan years",
-                        onChanged: (value) {
-                          setState(() {
-                            investmentTimespan = value.toInt();
-                            updateChartData();
-                          });
-                        },
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Deposit frequency:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButton<String>(
+                            value: depositFrequency,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                depositFrequency = newValue!;
+                              });
+                            },
+                            items: frequencies
+                                .map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            isExpanded: true,
+                          ),
+                        ],
                       ),
                     ),
-                    Text("$investmentTimespan years"),
                   ],
                 ),
-                SizedBox(height: 16),
-                Text("Compound Frequency:"),
+                const SizedBox(height: 16),
                 Row(
                   children: [
-                    Radio<String>(
-                      value: "365",
-                      groupValue: compoundPeriod,
-                      onChanged: (value) {
-                        setState(() {
-                          compoundPeriod = value!;
-                          updateChartData();
-                        });
-                      },
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Years:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: yearsController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text("Daily"),
-                    Radio<String>(
-                      value: "12",
-                      groupValue: compoundPeriod,
-                      onChanged: (value) {
-                        setState(() {
-                          compoundPeriod = value!;
-                          updateChartData();
-                        });
-                      },
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Months:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: monthsController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text("Monthly"),
-                    Radio<String>(
-                      value: "1",
-                      groupValue: compoundPeriod,
-                      onChanged: (value) {
-                        setState(() {
-                          compoundPeriod = value!;
-                          updateChartData();
-                        });
-                      },
-                    ),
-                    Text("Annually"),
                   ],
                 ),
-                SizedBox(height: 16),
-                Text("Future Balance: \$${chartData.isNotEmpty ? chartData.last.barRods.map((e) => e.toY).reduce((a, b) => a + b).toStringAsFixed(2) : "0"}"),
-                Text("Total Contributions: \$${totalContributions.toStringAsFixed(2)}"),
-                Text("Total Interest: \$${totalInterest.toStringAsFixed(2)}"),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: calculate,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: const Text('Calculate'),
+                ),
+                const SizedBox(height: 16),
+                // Resumo
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.grey.shade200,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Total Deposited: \$${totalDeposited.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Total Interest Earned: \$${totalInterestEarned.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Total Balance: \$${totalBalance.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-        ),
-        Expanded(
-          flex: 1,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+          // Tabela com scroll separado à direita
+          SizedBox(width: 24),
+          Expanded(
             child: SizedBox(
-              height: 300,
-              child: BarChart(
-                BarChartData(
-                  barGroups: chartData,
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, _) => Text("\$${value.toInt()}", style: TextStyle(fontSize: 10)),
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, _) => Text("Year ${(value).toInt()}", style: TextStyle(fontSize: 10)),
-                      ),
-                    ),
-                  ),
+              height: size.height, // Ocupa toda a altura disponível
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                child: DataTable(
+                  columns: const [
+                    DataColumn(label: Text('Month')),
+                    DataColumn(label: Text('Deposits')),
+                    DataColumn(label: Text('Interest')),
+                    DataColumn(label: Text('Total Deposits')),
+                    DataColumn(label: Text('Accrued Interest')),
+                    DataColumn(label: Text('Balance')),
+                  ],
+                  rows: tableData
+                      .map(
+                        (row) => DataRow(cells: [
+                          DataCell(Text(row['Period'].toString())),
+                          DataCell(Text('\$${row['Deposits'].toStringAsFixed(2)}')),
+                          DataCell(Text('\$${row['Interest'].toStringAsFixed(2)}')),
+                          DataCell(Text(
+                              '\$${row['Total Deposits'].toStringAsFixed(2)}')),
+                          DataCell(Text(
+                              '\$${row['Accrued Interest'].toStringAsFixed(2)}')),
+                          DataCell(
+                              Text('\$${row['Balance'].toStringAsFixed(2)}')),
+                        ]),
+                      )
+                      .toList(),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
