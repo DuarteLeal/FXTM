@@ -88,46 +88,11 @@ class MainPageState extends State<MainPage> {
             onTap: () => _onItemSelected('My accounts'),
           ),
           SidebarButton(
-            label: 'Performance',
-            isSelected: _selectedLabel == 'Performance',
-            onTap: () => _onItemSelected('Performance'),
-          ),
-          SidebarButton(
-            label: 'Reports',
-            isSelected: _selectedLabel == 'Reports',
-            onTap: () => _onItemSelected('Reports'),
-          ),
-          SidebarButton(
-            label: 'Market data',
-            isSelected: _selectedLabel == 'Market data',
-            onTap: () => _onItemSelected('Market data'),
-          ),
-          SidebarButton(
-            label: 'News',
-            isSelected: _selectedLabel == 'News',
-            onTap: () => _onItemSelected('News'),
-          ),
-          SidebarButton(
             label: 'Calculators',
             isSelected: _selectedLabel == 'Calculators',
             onTap: () => _onItemSelected('Calculators'),
           ),
           const Spacer(),
-          SidebarButton(
-            label: 'Settings',
-            isSelected: _selectedLabel == 'Settings',
-            onTap: () => _onItemSelected('Settings'),
-          ),
-          SidebarButton(
-            label: 'Help Center',
-            isSelected: _selectedLabel == 'Help Center',
-            onTap: () => _onItemSelected('Help Center'),
-          ),
-          SidebarButton(
-            label: 'Log out',
-            isSelected: _selectedLabel == 'Log out',
-            onTap: () => _onItemSelected('Log out'),
-          ),
         ],
       ),
     );
@@ -136,25 +101,13 @@ class MainPageState extends State<MainPage> {
   Widget _getWidget(String selectedLabel) {
     switch (selectedLabel) {
       case 'Dashboard':
-        return Dashboard(userDocument: userID,);
+        return Dashboard(userDocument: userID);
       case 'My accounts':
         return MyAccounts(userDocument: userID, accountsService: accountsService);
-      case 'Performance':
-        return const Text('Performance data will be shown here.');
-      case 'Reports':
-        return const Text('Reports data will be shown here.');
-      case 'Market data':
-        return const Text('Market data will be shown here.');
-      case 'News':
-        return const Text('News will be shown here.');
-        case 'Calculators':
+      case 'Calculators':
         return CompoundInterestCalculator();
-      case 'Settings':
-        return const Text('Settings adjustments will be shown here.');
-      case 'Help Center':
-        return const Text('Help Center info will be shown here.');
       default:
-        return const Text('Select an option from the sidebar.');
+        return Dashboard(userDocument: userID);
     }
   }
 }

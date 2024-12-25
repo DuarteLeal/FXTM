@@ -53,7 +53,7 @@ class AccountsService {
   }
 
   Future<String?> getAccessToken() async {
-    final docRef = FirebaseFirestore.instance.collection('Users').doc(user!.uid);
+    final docRef = FirebaseFirestore.instance.collection('users').doc(user!.uid);
     final doc = await docRef.get();
     return doc.data()!['access_token'] as String;
   }

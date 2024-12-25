@@ -85,7 +85,7 @@ exports.oauthCallback = functions.https.onRequest(async (req, res) => {
     // Timer para medir o tempo de gravação no Firestore
     console.time("Firestore Save Time");
     const expiryTime = Date.now() + tokenData.expires_in * 1000;
-    await admin.firestore().collection("Users").doc(uid).set(
+    await admin.firestore().collection("users").doc(uid).set(
       {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
@@ -147,7 +147,7 @@ exports.getAccounts = functions.https.onCall(async (data, context) => {
   const uid = context.auth.uid;
 
   try {
-    const userDoc = await admin.firestore().collection("Users").doc(uid).get();
+    const userDoc = await admin.firestore().collection("users").doc(uid).get();
     if (!userDoc.exists) {
       throw new functions.https.HttpsError(
         "not-found",
@@ -177,7 +177,7 @@ exports.getAccounts = functions.https.onCall(async (data, context) => {
       accessToken = refreshData.access_token;
 
       // Atualizar tokens no Firestore
-      await admin.firestore().collection("Users").doc(uid).update({
+      await admin.firestore().collection("users").doc(uid).update({
         access_token: refreshData.access_token,
         token_expiry: Date.now() + refreshData.expires_in * 1000,
       });
