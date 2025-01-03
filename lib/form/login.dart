@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fx_analysis/mainpage.dart';
+import 'package:fx_analysis/main.dart';
 import 'dart:html' as html; // ignore: avoid_web_libraries_in_flutter
 import 'dart:developer' as dev;
 
@@ -105,8 +105,15 @@ class LoginFormState extends State<LoginForm> {
   }
 
   void _loginUser() async {
+    setState(() {
+      // Reset error messages before login attempt
+      _emailError = '';
+      _passwordError = '';
+    });
+
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
@@ -123,15 +130,16 @@ class LoginFormState extends State<LoginForm> {
         }
 
         if (mounted) {
-          Navigator.of(context).push(
+          // Navigate to the MainPage after successful login
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (context) => MainPage(userID: user.uid),
+              builder: (context) => const MainPage(),
             ),
           );
         }
       }
     } on FirebaseAuthException catch (e) {
-      dev.log("Erro de login no Firebase: $e");
+      dev.log("Firebase login error: $e");
       setState(() {
         if (e.code == 'user-not-found') {
           _emailError = 'No user found for this email.';
@@ -142,7 +150,7 @@ class LoginFormState extends State<LoginForm> {
         }
       });
     } catch (e) {
-      dev.log("Erro inesperado: $e");
+      dev.log("Unexpected error: $e");
       setState(() {
         _emailError = 'An unexpected error occurred.';
       });
@@ -151,15 +159,20 @@ class LoginFormState extends State<LoginForm> {
 
   void _saveCredentials() {
     final cookieExpiryDate = DateTime.now().add(const Duration(days: 30));
-    final cookieExpiry = 'expires=${cookieExpiryDate.toUtc().toIso8601String()}';
+    final cookieExpiry =
+        'expires=${cookieExpiryDate.toUtc().toIso8601String()}';
 
-    html.document.cookie = 'email=${_emailController.text}; $cookieExpiry; path=/';
-    html.document.cookie = 'password=${_passwordController.text}; $cookieExpiry; path=/';
+    html.document.cookie =
+        'email=${_emailController.text}; $cookieExpiry; path=/';
+    html.document.cookie =
+        'password=${_passwordController.text}; $cookieExpiry; path=/';
   }
 
   void _clearCredentials() {
-    html.document.cookie = 'email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
-    html.document.cookie = 'password=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+    html.document.cookie =
+        'email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+    html.document.cookie =
+        'password=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
   }
 
   @override
