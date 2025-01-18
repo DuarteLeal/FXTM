@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as dev;
@@ -88,5 +89,25 @@ class AccountsService {
         return null;
     }
 }
+
+  Future<Map<String, dynamic>?> getDealList({
+    required int ctidTraderAccountId,
+    required bool isLive,
+  }) async {
+    try {
+      final callable = FirebaseFunctions.instance.httpsCallable('getDealList');
+      final response = await callable.call({
+        "ctidTraderAccountId": ctidTraderAccountId,
+        "isLive": isLive,
+        // poderás incluir fromTimestamp, toTimestamp etc. se quiseres.
+        "fromTimestamp": 1700000000000, 
+        "toTimestamp": 1730000000000, 
+      });
+
+      return response.data as Map<String, dynamic>?;
+    } catch (e) {
+      rethrow;
+    }
+  }
 
 }

@@ -31,6 +31,7 @@ class _MyAccountsState extends State<MyAccounts> {
         accounts = fetchedAccounts['data'];
       });
     } else {
+      // Tratar erro ou ausência de dados
     }
   }
 
@@ -39,48 +40,76 @@ class _MyAccountsState extends State<MyAccounts> {
     _fetchAccounts();
   }
 
+  // Método para ir buscar os deals daquela conta
+  Future<void> _fetchDealsForAccount(Map<String, dynamic> account) async {
+    try {
+      final ctidTraderAccountId = account['accountId'];
+      final isLive = account['live'];
+
+      // Chama o método do AccountsService
+      final dealListResponse = await widget.accountsService.getDealList(
+        ctidTraderAccountId: ctidTraderAccountId,
+        isLive: isLive,
+      );
+
+      debugPrint("Deals para a conta ${account['accountNumber']}: $dealListResponse");
+
+    } catch (e) {
+      debugPrint("Erro ao buscar deals para a conta ${account['accountNumber']}: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: _addAccount,
-                  child: const Text("Add Account"),
-                ),
-                Spacer()
-              ],
-            ),
-            accounts == null
-                ? const SizedBox.shrink()
-                : ListView.builder(
-                    shrinkWrap: true, // Prevent ListView from occupying infinite height
-                    physics: NeverScrollableScrollPhysics(), // Disable scrolling within the ListView
-                    itemCount: accounts!.length,
-                    itemBuilder: (context, index) {
-                      var account = accounts![index];
-                      return SizedBox(
-                        height: 300,
-                        width: 300,
-                        child: Column(
-                          children: [
-                            Text("Account Number: ${account['accountNumber']}"),
-                            Text("Live: ${account['live']}"),
-                            Text("Broker: ${account['brokerTitle']}"),
-                            Text("Currency: ${account['depositCurrency']}"),
-                            Text("Type: ${account['traderAccountType']}"),
-                            Text("Leverage: ${account['leverage']}"),
-                            Text("Balance: ${account['balance']}"),
-                          ],
-                        ),
-                      );
-                    },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ElevatedButton(
+                onPressed: _addAccount,
+                child: const Text("Add Account"),
+              ),
+              const Spacer()
+            ],
+          ),
+          if (accounts != null)
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: accounts!.length,
+              itemBuilder: (context, index) {
+                final account = accounts![index];
+                return SizedBox(
+                  height: 320,
+                  width: 300,
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Text("Account Number: ${account['accountNumber']}"),
+                          Text("Live: ${account['live']}"),
+                          Text("Broker: ${account['brokerTitle']}"),
+                          Text("Currency: ${account['depositCurrency']}"),
+                          Text("Type: ${account['traderAccountType']}"),
+                          Text("Leverage: ${account['leverage']}"),
+                          Text("Balance: ${account['balance']}"),
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () => _fetchDealsForAccount(account),
+                            child: const Text("Performance"),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-          ],
-        ),
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 }

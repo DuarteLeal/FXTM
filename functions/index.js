@@ -1,3 +1,5 @@
+/* eslint-env node, commonjs */
+
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const fetch = require("node-fetch");
@@ -196,7 +198,6 @@ exports.getAccounts = functions.https.onCall(async (data, context) => {
     }
 
     const accounts = await accountsResponse.json();
-
     return { accounts: accounts.accounts };
   } catch (error) {
     console.error("Error fetching accounts", error);
@@ -229,4 +230,225 @@ exports.fetchTradingAccounts = functions.https.onRequest((req, res) => {
           res.status(500).send('Error fetching trading accounts');
       }
   });
+});
+
+/**
+ * Exemplo de função onCall que retorna a lista de deals (PROTO_OA_DEAL_LIST_RES).
+ * 
+ * Chamada a partir do Flutter com:
+ * FirebaseFunctions.instance.httpsCallable('getDealList').call({
+ *   ctidTraderAccountId: 123456789,
+ *   fromTimestamp: 1700000000000,
+ *   toTimestamp: 1730000000000,
+ *   offset: 0,
+ *   limit: 100,
+ *   isLive: true // ou false
+ * });
+ */
+exports.getDealList = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "The function must be called while authenticated."
+    );
+  }
+  
+  const uid = context.auth.uid;
+  
+  try {
+    // Ler tokens do Firestore
+    const userDoc = await admin.firestore().collection("users").doc(uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError("not-found", "User data not found.");
+    }
+    const userData = userDoc.data();
+
+    // Verifica se o access token expirou; se sim, faz refresh
+    let accessToken = userData.access_token;
+    if (Date.now() >= userData.token_expiry) {
+      const refreshResponse = await fetch("https://api.ctrader.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `refresh_token=${userData.refresh_token}&client_id=${client_id}&client_secret=${client_secret}&grant_type=refresh_token`,
+      });
+      if (!refreshResponse.ok) {
+        throw new functions.https.HttpsError(
+          "permission-denied",
+          "Failed to refresh access token."
+        );
+      }
+      const refreshData = await refreshResponse.json();
+      accessToken = refreshData.access_token;
+      // Atualiza Firestore
+      await admin.firestore().collection("users").doc(uid).update({
+        access_token: accessToken,
+        token_expiry: Date.now() + refreshData.expires_in * 1000,
+      });
+    }
+
+    // Montamos o "dealListReq" em JSON
+    const dealListReq = {
+      payloadType: "PROTO_OA_DEAL_LIST_REQ",
+      payload: {
+        ctidTraderAccountId: data.ctidTraderAccountId,
+        accessToken: accessToken,
+        fromTimestamp: data.fromTimestamp,
+        toTimestamp: data.toTimestamp,
+        direction: "BACKWARD", // ou "FORWARD"
+        offset: data.offset ?? 0,
+        limit: data.limit ?? 100,
+      },
+    };
+
+    // Se a conta é live ou demo, escolhe o endpoint certo
+    const isLive = data.isLive;
+    const proxyEndpoint = isLive
+      ? "https://live.ctraderapi.com:5036"
+      : "https://demo.ctraderapi.com:5036";
+    
+    // Envia o POST para o endpoint certo
+    const response = await fetch(proxyEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(dealListReq),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new functions.https.HttpsError(
+        "unknown",
+        `Erro da cTrader: ${errorText}`
+      );
+    }
+
+    const jsonRes = await response.json();
+    return jsonRes;
+
+  } catch (error) {
+    console.error("Erro ao obter deals:", error);
+    throw new functions.https.HttpsError("unknown", error.message);
+  }
+});
+
+/**
+ * Exemplo de função onCall que obtém todas as contas do utilizador (via Spotware),
+ * verifica se cada conta é live ou demo e para cada uma faz um DealListReq.
+ * Devolve tudo num array "results".
+ */
+exports.getAllDeals = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Esta função requer autenticação."
+    );
+  }
+  const uid = context.auth.uid;
+
+  try {
+    // 1) Ler tokens do Firestore
+    const userDoc = await admin.firestore().collection("users").doc(uid).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError(
+        "not-found",
+        "Não encontrei dados do utilizador no Firestore."
+      );
+    }
+    const userData = userDoc.data();
+    let accessToken = userData.access_token;
+    let tokenExpiry = userData.token_expiry || 0;
+
+    // 2) Se o token expirou, faz refresh
+    if (Date.now() >= tokenExpiry) {
+      const refreshResponse = await fetch("https://api.ctrader.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `refresh_token=${userData.refresh_token}&client_id=${client_id}&client_secret=${client_secret}&grant_type=refresh_token`
+      });
+      if (!refreshResponse.ok) {
+        throw new functions.https.HttpsError(
+          "permission-denied",
+          "Falha ao fazer refresh do token cTrader."
+        );
+      }
+      const refreshData = await refreshResponse.json();
+      accessToken = refreshData.access_token;
+      tokenExpiry = Date.now() + refreshData.expires_in * 1000;
+
+      await admin.firestore().collection("users").doc(uid).update({
+        access_token: accessToken,
+        token_expiry: tokenExpiry
+      });
+    }
+
+    // 3) Obter as contas pela API do Spotware (que indica live: false/true)
+    //    Endpoint:
+    //    https://api.spotware.com/connect/tradingaccounts?access_token=...
+    const accountsUrl = `https://api.spotware.com/connect/tradingaccounts?access_token=${accessToken}`;
+    const accountsResp = await fetch(accountsUrl);
+    if (!accountsResp.ok) {
+      const errorTxt = await accountsResp.text();
+      throw new functions.https.HttpsError(
+        "unknown",
+        `Erro ao obter lista de contas: ${errorTxt}`
+      );
+    }
+    const accountsData = await accountsResp.json();
+    if (!accountsData.data || !Array.isArray(accountsData.data)) {
+      throw new Error("Formato inesperado: não existe array data[] nas contas.");
+    }
+
+    // 4) Para cada conta, decide se é Demo ou Live => chama endpoint => faz "dealListReq"
+    const results = await Promise.all(
+      accountsData.data.map(async (acct) => {
+        const isLive = acct.live;
+
+        // Montar o payload PROTO_OA_DEAL_LIST_REQ
+        const dealListReq = {
+          payloadType: "PROTO_OA_DEAL_LIST_REQ",
+          payload: {
+            ctidTraderAccountId: acct.accountId,
+            accessToken: accessToken,
+            fromTimestamp: data.fromTimestamp || 0,
+            toTimestamp: data.toTimestamp || Date.now(),
+            direction: "BACKWARD",
+            offset: 0,
+            limit: 50
+          }
+        };
+
+        // Selecionar endpoint (JSON):
+        //   Live: https://live.ctraderapi.com:5036
+        //   Demo: https://demo.ctraderapi.com:5036
+        const endpoint = isLive
+          ? "https://live.ctraderapi.com:5036"
+          : "https://demo.ctraderapi.com:5036";
+
+        const resp = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dealListReq)
+        });
+
+        if (!resp.ok) {
+          const errorText = await resp.text();
+          throw new Error(
+            `Erro do cTrader para a conta ${acct.accountId}: ${errorText}`
+          );
+        }
+
+        const dealListRes = await resp.json();
+        return {
+          accountId: acct.accountId,
+          isLive,
+          dealListRes
+        };
+      })
+    );
+
+    // 5) Retornar tudo ao Flutter
+    return { results };
+  } catch (error) {
+    console.error("Erro em getAllDeals:", error);
+    throw new functions.https.HttpsError("unknown", error.message);
+  }
 });

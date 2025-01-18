@@ -1,33 +1,24 @@
 module.exports = {
   env: {
     es6: true,
-    node: true,
+    node: true, // Enable Node.js global variables like 'module', 'require', 'exports'
+    commonjs: true,
   },
   parserOptions: {
-    ecmaVersion: 2018,
+    ecmaVersion: 2020, // Modern JS syntax
   },
   extends: [
     "eslint:recommended",
     "google",
   ],
   rules: {
-    "no-restricted-globals": ["error", "name", "length"], // Mantém regras específicas
-    "prefer-arrow-callback": "off", // Permite callbacks normais
-    "quotes": "off", // Desativa a regra de aspas
-    "camelcase": "off", // Desativa a regra de camelCase
-    "max-len": ["warn", { "code": 200 }], // Permite até 120 caracteres por linha (ou ajusta conforme necessário)
-    "comma-dangle": "off", // Permite vírgulas finais opcionais
-    "object-curly-spacing": "off", // Desativa espaço obrigatório em objetos
-    "indent": "off", // Desativa regras de indentação rígidas
+    "no-restricted-globals": ["error", "name", "length"],
+    "prefer-arrow-callback": "off",
+    "quotes": "off",
+    "camelcase": "off",
+    "max-len": ["warn", { "code": 200 }],
+    "comma-dangle": "off",
+    "object-curly-spacing": "off",
+    "indent": "off",
   },
-  overrides: [
-    {
-      files: ["**/*.spec.*"],
-      env: {
-        mocha: true,
-      },
-      rules: {},
-    },
-  ],
-  globals: {},
 };
