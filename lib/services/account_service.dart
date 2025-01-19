@@ -95,19 +95,32 @@ class AccountsService {
     required bool isLive,
   }) async {
     try {
+      // Verificar se o usuário está autenticado
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Verificar se o token está válido
+      final token = await user!.getIdToken();
+      if (token == null) {
+        throw Exception('Unable to get authentication token');
+      }
+
       final callable = FirebaseFunctions.instance.httpsCallable('getDealList');
+      dev.log('Calling getDealList with account: $ctidTraderAccountId, isLive: $isLive');
+      
       final response = await callable.call({
         "ctidTraderAccountId": ctidTraderAccountId,
         "isLive": isLive,
-        // poderás incluir fromTimestamp, toTimestamp etc. se quiseres.
         "fromTimestamp": 1700000000000, 
         "toTimestamp": 1730000000000, 
       });
 
+      dev.log('getDealList response: ${response.data}');
       return response.data as Map<String, dynamic>?;
     } catch (e) {
+      dev.log('Error in getDealList: $e');
       rethrow;
     }
   }
-
 }

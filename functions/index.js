@@ -1,4 +1,4 @@
-/* eslint-env node, commonjs */
+/* eslint-disable no-undef */
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -110,7 +110,7 @@ exports.authenticateCTrader = functions.https.onCall(async (data, context) => {
 
   if (!context.auth) {
     console.log('No authentication context available.');
-    throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated.');
+    throw new functions.https.HttpsError('unauthenticated', 'The function must be called while authenticated. (authenticateCTrader)');
   }
 
   try {
@@ -142,7 +142,7 @@ exports.getAccounts = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "The function must be called while authenticated."
+      "The function must be called while authenticated. (getAccounts)"
     );
   }
 
@@ -232,24 +232,11 @@ exports.fetchTradingAccounts = functions.https.onRequest((req, res) => {
   });
 });
 
-/**
- * Exemplo de função onCall que retorna a lista de deals (PROTO_OA_DEAL_LIST_RES).
- * 
- * Chamada a partir do Flutter com:
- * FirebaseFunctions.instance.httpsCallable('getDealList').call({
- *   ctidTraderAccountId: 123456789,
- *   fromTimestamp: 1700000000000,
- *   toTimestamp: 1730000000000,
- *   offset: 0,
- *   limit: 100,
- *   isLive: true // ou false
- * });
- */
 exports.getDealList = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
-      "The function must be called while authenticated."
+      "The function must be called while authenticated. (getDealList)"
     );
   }
   
@@ -416,9 +403,6 @@ exports.getAllDeals = functions.https.onCall(async (data, context) => {
           }
         };
 
-        // Selecionar endpoint (JSON):
-        //   Live: https://live.ctraderapi.com:5036
-        //   Demo: https://demo.ctraderapi.com:5036
         const endpoint = isLive
           ? "https://live.ctraderapi.com:5036"
           : "https://demo.ctraderapi.com:5036";

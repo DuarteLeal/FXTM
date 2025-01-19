@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fx_analysis/services/account_service.dart';
+import 'dart:developer' as dev;
 
 class MyAccounts extends StatefulWidget {
   final String userDocument;
@@ -46,16 +47,15 @@ class _MyAccountsState extends State<MyAccounts> {
       final ctidTraderAccountId = account['accountId'];
       final isLive = account['live'];
 
-      // Chama o método do AccountsService
       final dealListResponse = await widget.accountsService.getDealList(
         ctidTraderAccountId: ctidTraderAccountId,
         isLive: isLive,
       );
 
-      debugPrint("Deals para a conta ${account['accountNumber']}: $dealListResponse");
+      dev.log("Deals para a conta ${account['accountNumber']}: $dealListResponse");
 
     } catch (e) {
-      debugPrint("Erro ao buscar deals para a conta ${account['accountNumber']}: $e");
+      dev.log("Erro ao buscar deals para a conta ${account['accountNumber']}: $e");
     }
   }
 
